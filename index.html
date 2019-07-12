@@ -1,10 +1,12 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
     <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <script type="module" src="index.js"></script>
+        <meta charset=utf-8"></meta>
         <link href="book_editor.css" rel="stylesheet" type="text/css"></link>
+        <title>Book Editor</title>
     </head>
     <body>
+        <h1>Web Scraper eBook Editor</h1>
         <div class="book_list">
             <div id="book_list">
                 <input type="file" name="book_file"></input>
@@ -20,4 +22,9 @@
             </div>
         </div>
     </body>
+    <script>
+      // You can also require other files to run in this process
+      require('./renderer.js')
+    </script>
+
 </html>

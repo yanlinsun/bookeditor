@@ -1,0 +1,19 @@
+{
+  "name": "bookeditor",
+  "version": "1.0.0",
+  "description": "eBook editor for Web Scraper generated html file",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron --inspect=5858 ."
+  },
+  "repository": "https://github.com/yanlinsun/bookeditor.git",
+  "keywords": [
+    "ebook",
+    "web scraper"
+  ],
+  "author": "Yanlin Sun",
+  "license": "None",
+  "devDependencies": {
+    "electron": "^5.0.0"
+  }
+}
