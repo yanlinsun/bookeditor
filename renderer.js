@@ -1,12 +1,13 @@
 
-const BookEditor = require('./bookeditor.js');
+const BookEditor = require('./bookeditor');
 
 function init() {
     document.getElementById("book_file").onchange = readbook;
 }
 
 function readbook() {
-    let editor = new BookEditor(document.getElementById("book_file").value);
+    let file = document.getElementById("book_file").files[0];
+    let editor = new BookEditor(file.path);
 }
 
-init();
+init()

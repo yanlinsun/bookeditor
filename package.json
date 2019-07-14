@@ -4,7 +4,8 @@
   "description": "eBook editor for Web Scraper generated html file",
   "main": "main.js",
   "scripts": {
-    "start": "electron --inspect=5858 ."
+    "start": "electron .",
+    "debug": "electron --inspect=5858 ."
   },
   "repository": "https://github.com/yanlinsun/bookeditor.git",
   "keywords": [

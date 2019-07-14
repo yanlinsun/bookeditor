@@ -1,2 +1,46 @@
-body {
+* {
+    color: var(--color-font);
 }
+
+.book_list {
+}
+
+.book_toc {
+    background-color: var(--color-bg);
+    width:50%;
+}
+
+.toc {
+    cursor: default;
+    background-color: transparent;
+    padding: 5px;
+    width: 100%;
+}
+
+.toc:hover,
+.toc:focus:not(.selected) {
+    background-color: var(--color-hover);
+}
+
+.toc.selected {
+    background-color: var(--color-selected);
+    color: white;
+}
+.toc.indent {
+    padding-left: 40px;
+}
+
+.preview {
+}
+
+:root {
+  --color-hover:      hsl(0,0%,88%);
+  --color-selected:   rgb(60, 100, 195);
+
+  --color-border:   hsl(0,0%,88%);
+  --color-bg:       hsl(0,0%,96%);
+  --color-font:     hsl(0,0%,0%);
+
+  --color-accent:   black; /* Fallback */
+}
+

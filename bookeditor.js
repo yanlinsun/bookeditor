@@ -15,53 +15,43 @@ class BookEditor {
         });
     }
 
-    function showBook(dom) {
+    showBook(dom) {
         let title = dom.querySelector("h1");
-        showTitle(title);
+        this.showTitle(title);
         let toc = dom.querySelector("div.toc");
-        showToc(toc);
+        this.showToc(toc);
     }
 
-    function showTitle(title) {
+    showTitle(title) {
         let bookTitle = document.getElementById("book_title");
         bookTitle.innerText = title;
     }
 
-    function showToc(toc) {
-        let table = document.getElementById("boot_toc");
-        Array.from(toc.children).forEach(tr => {
+    showToc(toc) {
+        let table = document.getElementById("book_toc");
+        Array.from(toc.querySelectorAll("tr")).forEach(tr => {
             let row = table.insertRow();
             let cell = row.insertCell();
-            cell.innerText = tr.firstChild.innerText;
-            cell.id = tr.firstChild.firstChild.href;
-            cell.className = "toc";
-            cell.onclick = selectToc;
-            cell.onmouseover = overToc;
-            cell.onmouseleave = leaveToc;
+            cell.classList.add("toc");
+            let link = tr.cells[0].firstElementChild;
+            cell.id = link.hash;
+            if (link.parentNode.classList.contains("indent")) {
+                cell.classList.add("indent");
+            }
+            cell.innerText = link.innerText;
+            cell.onclick = this.selectToc;
         });
     }
 
-    function selectToc(id) {
+    selectToc(id) {
         let cell = event.target;
 
         // unselect other toc
-        let cells = cell.cloest('table').querySelectorAll("td.selected");
-        Array.from(cells).forEach(c => c.className = "toc");
+        let cells = cell.closest('table').querySelectorAll("td.selected");
+        Array.from(cells).forEach(c => c.classList.remove("selected"));
 
-        cell.className = "selected";
-    }
-
-    function overToc(e) {
-        let cell = e.target;
-        if (cell.className != "selected") {
-            cell.className = "over_toc";
-        }
-    }
-
-    function leaveToc(e) {
-        let cell = e.target;
-        if (cell.className != "selected") {
-            cell.className = "toc";
-        }
+        cell.classList.add("selected");
     }
 }
+
+module.exports = BookEditor;
