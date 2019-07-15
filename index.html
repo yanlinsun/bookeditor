@@ -3,22 +3,29 @@
     <head>
         <meta charset=utf-8"></meta>
         <link href="book_editor.css" rel="stylesheet" type="text/css"></link>
+        <link rel="stylesheet" href="skeleton/normalize.css"></link>
+        <link rel="stylesheet" href="skeleton/skeleton.css"></link>
         <title>Book Editor</title>
     </head>
     <body>
-        <h1>Web Scraper eBook Editor</h1>
-        <div class="book_list">
-            <div id="book_list">
-                <input type="file" id="book_file"></input>
+        <div class="container u-full-width u-max-full-width">
+            <div class="row">
+                <div id="book_list" class="twelve columns">
+                    <input type="file" id="book_file"></input>
+                    <input type="button" id="book_save" value="Save"></input>
+                    <span id="message"></span>
+                </div>
             </div>
-        </div>
-        <div class="book_toc">
-            <div id="book_title" class="book_title"></div>
-            <table id="book_toc">
-            </table>
-        </div>
-        <div class="preview">
-            <div id="preview_container">
+            <div class="row book">
+                <div class="four columns book_toc">
+                    <table id="book_toc">
+                    </table>
+                </div>
+                <div class="eight columns book_content">
+                    <div class="preview_title">Preview</div>
+                    <div id="preview_container" class="preview_container">
+                    </div>
+                </div>
             </div>
         </div>
     </body>

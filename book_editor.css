@@ -1,23 +1,29 @@
-* {
-    color: var(--color-font);
-}
-
-.book_list {
+.book {
 }
 
 .book_toc {
     background-color: var(--color-bg);
-    width:50%;
+}
+
+.book_content {
+}
+
+.book_toc table {
+}
+
+.book_toc table caption {
+    text-align: left;
+    font-weight: bold;
+    font-size: 120%;
 }
 
 .toc {
     cursor: default;
     background-color: transparent;
     padding: 5px;
-    width: 100%;
 }
 
-.toc:hover,
+.toc:hover ,
 .toc:focus:not(.selected) {
     background-color: var(--color-hover);
 }
@@ -26,11 +32,37 @@
     background-color: var(--color-selected);
     color: white;
 }
+
 .toc.indent {
     padding-left: 40px;
 }
 
-.preview {
+.toc:hover input[type=button] {
+    visibility: visible
+}
+
+.toc.selected input[type=button] {
+    visibility: visible;
+    color: white;
+}
+
+.toc input[type=button] {
+    visibility: hidden;
+}
+
+.book_content div {
+}
+
+.preview_title {
+    font-weight: bold;
+    padding-left: 5px;
+}
+
+.preview_container {
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    margin: 5px;
+    padding: 5px;
 }
 
 :root {

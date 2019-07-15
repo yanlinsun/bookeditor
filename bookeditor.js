@@ -11,46 +11,103 @@ class BookEditor {
             }
 
             let dom = new DOMParser().parseFromString(data, "text/html");
+            this.book = dom;
             this.showBook(dom);
+        });
+    }
+
+    clear() {
+        let table = this.tocTable();
+        table.deleteCaption();
+        table.removeChild(table.firstElementChild);
+    }
+
+    save() {
+        let content = this.book.documentElement.outerHTML;
+        fs.writeFile(this.filename, content, "utf-8", (err) => {
+            if (err) {
+                console.error(err);
+                document.getElementById("message").innerHTML = err.toString();
+            } else {
+                document.getElementById("message").innerHTML = "File saved!";
+            }
         });
     }
 
     showBook(dom) {
         let title = dom.querySelector("h1");
-        this.showTitle(title);
+        this.showTitle(title.innerHTML);
         let toc = dom.querySelector("div.toc");
         this.showToc(toc);
     }
 
     showTitle(title) {
-        let bookTitle = document.getElementById("book_title");
-        bookTitle.innerText = title;
+        let table = this.tocTable();
+        let c = table.createCaption();
+        c.innerHTML = title;
     }
 
     showToc(toc) {
-        let table = document.getElementById("book_toc");
+        let table = this.tocTable();
         Array.from(toc.querySelectorAll("tr")).forEach(tr => {
             let row = table.insertRow();
             let cell = row.insertCell();
             cell.classList.add("toc");
             let link = tr.cells[0].firstElementChild;
-            cell.id = link.hash;
+            cell.id = link.hash.substring(1);
             if (link.parentNode.classList.contains("indent")) {
                 cell.classList.add("indent");
             }
-            cell.innerText = link.innerText;
-            cell.onclick = this.selectToc;
+            cell.onclick = () => this.selectToc(cell.id);
+            let c = document.createElement("SPAN");
+            c.innerHTML = link.innerText;
+            cell.appendChild(c);
+            c = document.createElement("INPUT");
+            c.type = "button";
+            c.value = "Delete";
+            c.onclick = () => {
+                event.stopPropagation();
+                this.deleteToc(cell.id);
+            };
+            cell.appendChild(c);
         });
     }
 
-    selectToc(id) {
-        let cell = event.target;
+    deleteToc(id) {
+        let cell = this.tocCell(id);
+        cell.parentNode.removeChild(cell);
 
+        let bookLink = this.book.querySelector("a[href='#" + id + "']");
+        let bookToc = bookLink.closest('tr');
+        bookToc.parentNode.removeChild(bookToc);
+        let content = this.book.querySelector("div[id='" + id + "']");
+        content.parentNode.removeChild(content);
+    }
+
+    selectToc(id) {
+        let table = this.tocTable();
         // unselect other toc
-        let cells = cell.closest('table').querySelectorAll("td.selected");
+        let cells = table.querySelectorAll("td.selected");
         Array.from(cells).forEach(c => c.classList.remove("selected"));
 
+        let cell = this.tocCell(id);
         cell.classList.add("selected");
+
+        this.showPreview(id);
+    }
+
+    showPreview(id) {
+        let preview = document.getElementById("preview_container");
+        let content = this.book.querySelector("div[id='" + id + "']");
+        preview.innerHTML = content.innerHTML;
+    }
+
+    tocCell(id) {
+        return this.tocTable().querySelector("td[id='" + id + "']");
+    }
+
+    tocTable() {
+        return document.getElementById("book_toc");
     }
 }
 
