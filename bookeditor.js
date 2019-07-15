@@ -12,14 +12,26 @@ class BookEditor {
 
             let dom = new DOMParser().parseFromString(data, "text/html");
             this.book = dom;
-            this.showBook(dom);
+            try {
+                this.showBook(dom);
+            } catch (err) {
+                this.message("File not supported!");
+                console.error(err);
+            }
         });
+    }
+
+    message(msg) {
+        document.getElementById("message").innerHTML = msg;
     }
 
     clear() {
         let table = this.tocTable();
         table.deleteCaption();
-        table.removeChild(table.firstElementChild);
+        if (table.firstElementChild) {
+            table.removeChild(table.firstElementChild);
+        }
+        this.setPreviewContent("");
     }
 
     save() {
@@ -27,9 +39,9 @@ class BookEditor {
         fs.writeFile(this.filename, content, "utf-8", (err) => {
             if (err) {
                 console.error(err);
-                document.getElementById("message").innerHTML = err.toString();
+                this.message(err.toString());
             } else {
-                document.getElementById("message").innerHTML = "File saved!";
+                this.message("File saved!");
             }
         });
     }
@@ -69,6 +81,7 @@ class BookEditor {
                 event.stopPropagation();
                 this.deleteToc(cell.id);
             };
+            c.classList.add("button-primary");
             cell.appendChild(c);
         });
     }
@@ -97,9 +110,13 @@ class BookEditor {
     }
 
     showPreview(id) {
+        let div = this.book.querySelector("div[id='" + id + "']");
+        this.setPreviewContent(div.innerHTML);
+    }
+
+    setPreviewContent(content) {
         let preview = document.getElementById("preview_container");
-        let content = this.book.querySelector("div[id='" + id + "']");
-        preview.innerHTML = content.innerHTML;
+        preview.innerHTML = content;
     }
 
     tocCell(id) {

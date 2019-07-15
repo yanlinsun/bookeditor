@@ -9,6 +9,7 @@
 }
 
 .book_toc table {
+    width: -webkit-fill-available;
 }
 
 .book_toc table caption {
@@ -21,6 +22,7 @@
     cursor: default;
     background-color: transparent;
     padding: 5px;
+    vertical-align: middle;
 }
 
 .toc:hover ,
@@ -37,8 +39,15 @@
     padding-left: 40px;
 }
 
+.toc input[type=button] {
+    visibility: hidden;
+    display: inline-block;
+    float: right;
+    margin: 5px;
+}
+
 .toc:hover input[type=button] {
-    visibility: visible
+    visibility: visible;
 }
 
 .toc.selected input[type=button] {
@@ -46,8 +55,10 @@
     color: white;
 }
 
-.toc input[type=button] {
-    visibility: hidden;
+.toc span {
+    height: -webkit-fill-available;
+    vertical-align: middle;
+    display: inline-block;
 }
 
 .book_content div {
