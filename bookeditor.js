@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const dd = require('./util/dragdrop.js');
 
 class BookEditor {
     constructor(filename) {
@@ -35,6 +36,7 @@ class BookEditor {
     }
 
     save() {
+        this.reorder();
         let content = this.book.documentElement.outerHTML;
         fs.writeFile(this.filename, content, "utf-8", (err) => {
             if (err) {
@@ -46,9 +48,24 @@ class BookEditor {
         });
     }
 
+    reorder() {
+        let table = this.tocTable();
+        let bookToc = this.book.querySelector("div.toc tbody");
+        let bookContent = this.book.querySelector("div.content");
+        Array.from(table.rows).forEach((tr, i) => {
+            let id = tr.cells[0].id;
+            let bookLink = bookToc.querySelector("a[href='#" + id + "']").closest("tr");
+            bookToc.insertBefore(bookLink, null);
+            let content = bookContent.querySelector("div[id='" + id + "']");
+            bookContent.insertBefore(content, null);
+        });
+    }
+
     showBook(dom) {
         let title = dom.querySelector("h1");
-        this.showTitle(title.innerHTML);
+        if (title) {
+            this.showTitle(title.innerHTML);
+        }
         let toc = dom.querySelector("div.toc");
         this.showToc(toc);
     }
@@ -65,7 +82,7 @@ class BookEditor {
             let row = table.insertRow();
             let cell = row.insertCell();
             cell.classList.add("toc");
-            let link = tr.cells[0].firstElementChild;
+            let link = tr.cells[0].querySelector("a");
             cell.id = link.hash.substring(1);
             if (link.parentNode.classList.contains("indent")) {
                 cell.classList.add("indent");
@@ -84,11 +101,12 @@ class BookEditor {
             c.classList.add("button-primary");
             cell.appendChild(c);
         });
+        dd.draggable(table);
     }
 
     deleteToc(id) {
-        let cell = this.tocCell(id);
-        cell.parentNode.removeChild(cell);
+        let row = this.tocCell(id).parentNode;
+        row.parentNode.removeChild(row);
 
         let bookLink = this.book.querySelector("a[href='#" + id + "']");
         let bookToc = bookLink.closest('tr');

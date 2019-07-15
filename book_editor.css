@@ -23,6 +23,7 @@
     background-color: transparent;
     padding: 5px;
     vertical-align: middle;
+    width: -webkit-fill-available;
 }
 
 .toc:hover ,
