@@ -1,8 +1,43 @@
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Material Icons'),
+    local('MaterialIcons-Regular'),
+    url(./font/MaterialIcons-Regular.woff) format('woff');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;  /* Preferred icon size */
+/*  display: inline-block; */
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+
+  /* Support for all WebKit browsers. */
+  -webkit-font-smoothing: antialiased;
+  /* Support for Safari and Chrome. */
+  text-rendering: optimizeLegibility;
+
+  /* Support for Firefox. */
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Support for IE. */
+  font-feature-settings: 'liga';
+}
 .book {
 }
 
 .book_toc {
     background-color: var(--color-bg);
+    height: -webkit-fill-available;
+    overflow-y: auto;
 }
 
 .book_content {
@@ -56,10 +91,29 @@
     color: white;
 }
 
+.toc .button-primary {
+    visibility: hidden;
+    display: inline-block;
+    float: right;
+    margin: 5px;
+}
+
+.toc:hover .button-primary {
+    visibility: visible;
+}
+
+.toc.selected .button-primary {
+    visibility: visible;
+    color: white;
+}
+
+.toc .button-primary .delete {
+    icon: url(./images/trash.png);
+}
+
 .toc span {
     height: -webkit-fill-available;
     vertical-align: middle;
-    display: inline-block;
 }
 
 .book_content div {
@@ -75,6 +129,14 @@
     background-color: var(--color-bg);
     margin: 5px;
     padding: 5px;
+}
+
+.hide {
+    display: none !important;
+}
+
+input .fill_available {
+    width: -webkit-fill-available;
 }
 
 :root {

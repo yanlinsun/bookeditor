@@ -12,25 +12,6 @@ const DD = {
             o.draggable = true;
             o.ondragstart = DD._DragStart;
             DD.draggable(o.children);
-/*            if (o.tagName === "TABLE" && o.tBodies) {
-                o.__dd_droppable = true;
-                for (let i = 0; i < o.tBodies.length; i++) {
-                    DD.draggable(o.tBodies[i].rows);
-                }
-            } else if (o.tagName === "TBODY") {
-                o.parentNode.__dd_droppable = true;
-                DD.draggable(o.rows);
-            } else if (o.tagName === "TR") {
-                o.draggable = true;
-                o.__dd_draggable = true;
-                o.__dd_droppable = true;
-                if (!o.parentNode.parentNode.__dd_droppable) {
-                    o.parentNode.parentNode.__dd_droppable = true;
-                }
-                o.ondragstart = DD._DragStart;
-            } else if (o.tagName === "TD") {
-                o = DD.draggable(o.parentNode);
-            } */
         }
     },
 
@@ -46,7 +27,6 @@ const DD = {
         if (!row.__dd_draggable || row.tagName !== "TR") {
             throw new Error("Not a recognized draggable object: " + row.outerHTML);
         }
-        console.log("Dragging: " + row.innerText);
         return row;
     },
 
