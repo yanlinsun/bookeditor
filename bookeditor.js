@@ -1,29 +1,91 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const dd = require('./util/dragdrop.js');
+const Book = require('./book.js');
+const uuidv5 = require('uuid').v5;
+const namespace = uuidv5("yanlin.sun/bookeditor", uuidv5.DNS);
 
 class BookEditor {
-    constructor(filename) {
-        this.filename = filename;
-        fs.readFile(filename, "utf-8", (err, data) => {
-            if (err) {
-                throw err;
-            }
+    constructor(dir) {
+        this.bookDict = new Map();
+        this.currentBook = null;
+        this.loadBooks(dir);
+    }
 
-            let dom = new DOMParser().parseFromString(data, "text/html");
-            this.book = dom;
-            try {
-                this.showBook(dom);
-            } catch (err) {
-                this.message("File not supported!");
-                console.error(err);
-            }
+    async loadBooks(dir) {
+        let loading = new Promise((resolve, reject) => {
+            fs.readdir(dir, { withFileTypes: false }, (err, files) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(files);
+                }
+
+            });
         });
+        let files = await loading;
+        let htmls = files.filter(f => f.endsWith(".html"));
+        return this.list(dir, htmls);
+    }
+
+    list(dir, files) {
+        let list = document.getElementById("book_list");
+        for(let f of files) {
+            let row = list.insertRow();
+            let cell = row.insertCell();
+            cell.innerText = f;
+            cell.onclick = (e) => {
+                let td = e.srcElement;
+                let cells = td.closest("table").querySelectorAll("td.selected");
+                Array.from(cells).forEach(c => c.classList.remove("selected"));
+                td.classList.add("selected");
+                this.parseBook(path.join(dir, f));
+            }
+        }
+    }
+
+    async parseBook(fullpath) {
+        let book = this.bookDict.get(fullpath);
+        if (book) {
+            this.showBook(book);
+        } else {
+            let readFile = new Promise((resolve, reject) => {
+                fs.readFile(fullpath, "utf-8", (err, data) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(data);
+                    }
+                });
+            });
+            let data = await readFile;
+            if (data.indexOf("<meta name=\"generator\" content=\"webscraper\"") > 0) {
+                let dom = new DOMParser().parseFromString(data, "text/html");
+                try {
+                    let book = new Book(dom, path.basename(fullpath, ".html"));
+                    this.bookDict.set(fullpath, book);
+                    this.showBook(book);
+                } catch (e) {
+                    console.error(e);
+                    this.message(e.toString());
+                }
+            } else {
+                this.message("This is not a valid book");
+            }
+        }
     }
 
     message(msg) {
         document.getElementById("message").innerHTML = msg;
+        document.getElementById("book").classList.add("hide");
+        document.getElementById("message").classList.remove("hide");
+    }
+
+    clearMessage() {
+        document.getElementById("message").classList.add("hide");
+        document.getElementById("book").classList.remove("hide");
     }
 
     clear() {
@@ -35,10 +97,70 @@ class BookEditor {
         this.setPreviewContent("");
     }
 
-    save() {
-        this.reorder();
-        let content = this.book.documentElement.outerHTML;
-        fs.writeFile(this.filename, content, "utf-8", (err) => {
+    save(book) {
+        this.reorder(book);
+        this.saveMetaInf(book);
+        this.saveMimetype(book);
+        this.saveContentOpf(book);
+        this.saveHtml(book);
+    }
+
+    saveMetaInf(book) {
+        var content = [];
+		content.push("<?xml version=\"1.0\"?>");
+		content.push("<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">");
+		content.push("   <rootfiles>");
+		content.push("      <rootfile full-path=\"content.opf\" media-type=\"application/oebps-package+xml\"/>");
+		content.push("   </rootfiles>");
+		content.push("</container>");
+        writeFile("META-INF/content.opf", content.join("\r\n"));
+    
+    }
+
+    saveMimeType(book) {
+        writeFile("mimetype", "application/epub+zip");
+    }
+
+    saveContentOpf(book) {
+        var content = [];
+		content.push("<?xml version='1.0' encoding='utf-8'?>");
+		content.push("<package xmlns=\"http://www.idpf.org/2007/opf\" unique-identifier=\"uuid_id\" version=\"2.0\">");
+		content.push("  <opf:metadata xmlns:calibre=\"http://calibre.kovidgoyal.net/2009/metadata\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:opf=\"http://www.idpf.org/2007/opf\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">");
+		content.push("    <opf:meta name=\"calibre:timestamp\" content=\"2020-03-28T09:49:54.609846+00:00\"/>");
+		content.push("    <dc:creator>Unknown</dc:creator>");
+		content.push("    <dc:identifier id=\"uuid_id\" opf:scheme=\"uuid\">" + uuid(book.title) + "</dc:identifier>");
+		content.push("    <dc:title>" + book.title + "</dc:title>");
+		content.push("    <dc:language>zh-CN</dc:language>");
+		content.push("  </opf:metadata>");
+		content.push("  <manifest>");
+        for(let i = 0; i < book.chapters.length; i++) {
+		    content.push("    <item href=\"part" + new String(i).padStart(4, '0') + ".html\" id=\"html\" media-type=\"application/xhtml+xml\"/>");
+        }
+		content.push("    <item href=\"toc.ncx\" id=\"ncx\" media-type=\"application/x-dtbncx+xml\"/>");
+		content.push("  </manifest>");
+		content.push("  <spine toc=\"ncx\">");
+        for(let i = 0; i < book.chapters.length; i++) {
+		    content.push("    <itemref idref=\"part" + new String(i).padStart(4, '0') + ".html\"/>");
+        }
+		content.push("  </spine>");
+		content.push("  <guide/>");
+		content.push("</package>");
+        writeFile("content.opf", content.join("\r\n"));
+    }
+
+    uuid(title) {
+        return uuidv5(title, namespace);
+    }
+
+    saveHtml(book) {
+        let i = 0;
+        for(var chapter of book.chapters.values()) {
+            writeFile("part" + new String(++i).padStart(4, '0') + ".html", chapter.content);
+        }
+    }
+
+    writeFile(filename, content) {
+        fs.writeFile(filename, content, "utf-8", (err) => {
             if (err) {
                 console.error(err);
                 this.message(err.toString());
@@ -66,13 +188,11 @@ class BookEditor {
         });
     }
 
-    showBook(dom) {
-        let title = dom.querySelector("h1");
-        if (title) {
-            this.showTitle(title.innerHTML);
-        }
-        let toc = dom.querySelector("div.toc");
-        this.showToc(toc);
+    showBook(book) {
+        this.clearMessage();
+        this.currentBook = book;
+        this.showTitle(book.title);
+        this.showToc(book.chapters);
     }
 
     showTitle(title) {
@@ -81,30 +201,29 @@ class BookEditor {
         c.innerHTML = title;
     }
 
-    showToc(toc) {
+    showToc(chapters) {
         let table = this.tocTable();
-        Array.from(toc.querySelectorAll("tr")).forEach(tr => {
+        table.innerHTML = "";
+        for(let chapter of chapters.values()) {
             let row = table.insertRow();
             let cell = row.insertCell();
             cell.classList.add("toc");
-            let link = tr.cells[0].querySelector("a");
-            cell.id = link.hash.substring(1);
-            let indent = link.parentNode.classList.contains("indent");
-            if (indent) {
+            cell.id = chapter.id;
+            if (chapter.indent) {
                 cell.classList.add("indent");
             }
             cell.onclick = () => this.selectToc(cell.id);
             let c = document.createElement("SPAN");
-            c.innerHTML = link.innerText;
+            c.innerHTML = chapter.title;
             c.ondblclick = () => this.editToc(cell.id);
             cell.appendChild(c);
             this.addTocButton(cell, "delete", this.deleteToc);
-            if (indent) {
+            if (chapter.indent) {
                 this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
             } else {
                 this.addTocButton(cell, "format_indent_increase", this.indentInToc);
             }
-        });
+        }
         dd.draggable(table);
     }
 
@@ -185,19 +304,14 @@ class BookEditor {
         let cell = this.tocCell(id);
         let text = cell.querySelector("SPAN");
         text.innerHTML = value;
-        let bookLink = this.book.querySelector("a[href='#" + id + "']");
-        bookLink.innerText = value;
+        let chapter = this.currentBook.chapters.get(id);
+        chapter.title = value;
     }
 
     deleteToc(id) {
         let row = this.tocCell(id).parentNode;
         row.parentNode.removeChild(row);
-
-        let bookLink = this.book.querySelector("a[href='#" + id + "']");
-        let bookToc = bookLink.closest('tr');
-        bookToc.parentNode.removeChild(bookToc);
-        let content = this.book.querySelector("div[id='" + id + "']");
-        content.parentNode.removeChild(content);
+        this.currentBook.chapters.delete(id);
     }
 
     selectToc(id) {
@@ -213,8 +327,8 @@ class BookEditor {
     }
 
     showPreview(id) {
-        let div = this.book.querySelector("div[id='" + id + "']");
-        this.setPreviewContent(div.innerHTML);
+        let chapter = this.currentBook.chapters.get(id);
+        this.setPreviewContent(chapter.content);
     }
 
     setPreviewContent(content) {

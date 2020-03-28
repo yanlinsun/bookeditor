@@ -7,25 +7,29 @@
         <link rel="stylesheet" href="skeleton/skeleton.css"></link>
         <title>Book Editor</title>
     </head>
-    <body>
-        <div class="container u-full-width u-max-full-width">
-            <div class="row">
-                <div id="book_list" class="twelve columns">
-                    <a id="button_open" href="#" class="button button-primary">Open
-                    <input type="file" id="book_file" class="hide"></input>
-                    </a>
+    <body class="one-row">
+        <div class="one-row fullwidth">
+            <div class="one-column two columns">
+                <div class="one-row fullwidth">
+                    <input type="button" id="book_file" value="Open" class="button-primary"></input>&nbsp;&nbsp;
                     <input type="button" id="book_save" value="Save" class="button-primary"></input>
-                    <span id="message"></span>
                 </div>
-            </div>
-            <div class="row book">
-                <div class="four columns book_toc">
-                    <table id="book_toc">
+                <div class="fullheight fullwidth vscrollable">
+                    <table id="book_list" class="selectable fullwidth">
                     </table>
                 </div>
-                <div class="eight columns book_content">
-                    <div class="preview_title">Preview</div>
-                    <div id="preview_container" class="preview_container">
+            </div>
+            <div class="flex columns">
+                <div id="message" class="fullwidth message hide">
+                </div>
+                <div id="book" class="one-row fullwidth fullheight">
+                    <div class="four columns book_toc vscrollable">
+                        <table id="book_toc" class="fullwidth selectable">
+                        </table>
+                    </div>
+                    <div class="flexi columns fullheight vscrollable">
+                        <div id="preview_container" class="preview_container fullwidth">
+                        </div>
                     </div>
                 </div>
             </div>

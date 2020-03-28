@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
+  <opf:metadata xmlns:calibre="http://calibre.kovidgoyal.net/2009/metadata" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:opf="http://www.idpf.org/2007/opf" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <opf:meta name="calibre:timestamp" content="2020-03-28T09:49:54.609846+00:00"/>
+    <dc:creator>Unknown</dc:creator>
+    <dc:identifier id="uuid_id" opf:scheme="uuid">be00dd55-f046-46d7-8b48-e0ae333ae137</dc:identifier>
+    <dc:title>露之悲鸣</dc:title>
+    <dc:language>zh-CN</dc:language>
+  </opf:metadata>
+  <manifest>
+    <item href="Lu Zhi Bei Ming.html" id="html" media-type="application/xhtml+xml"/>
+    <item href="toc.ncx" id="ncx" media-type="application/x-dtbncx+xml"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="html"/>
+  </spine>
+  <guide/>
+</package>

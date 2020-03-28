@@ -51,32 +51,34 @@
 /* For devices larger than 550px */
 @media (min-width: 550px) {
   .container {
-    width: 80%; }
+    width: 100%; }
   .column,
   .columns {
-    margin-left: 4%; }
+    margin-left: 2px; 
+    }
   .column:first-child,
   .columns:first-child {
     margin-left: 0; }
 
   .one.column,
-  .one.columns                    { width: 4.66666666667%; }
-  .two.columns                    { width: 13.3333333333%; }
-  .three.columns                  { width: 22%;            }
-  .four.columns                   { width: 30.6666666667%; }
-  .five.columns                   { width: 39.3333333333%; }
-  .six.columns                    { width: 48%;            }
-  .seven.columns                  { width: 56.6666666667%; }
-  .eight.columns                  { width: 65.3333333333%; }
-  .nine.columns                   { width: 74.0%;          }
-  .ten.columns                    { width: 82.6666666667%; }
-  .eleven.columns                 { width: 91.3333333333%; }
+  .one.columns                    { width: 8.34%; }
+  .two.columns                    { width: 16.66%; }
+  .three.columns                  { width: 25%; }
+  .four.columns                   { width: 33.34%; }
+  .five.columns                   { width: 41.67%; }
+  .six.columns                    { width: 50%; }
+  .seven.columns                  { width: 58.34%; }
+  .eight.columns                  { width: 66.67%; }
+  .nine.columns                   { width: 75%; }
+  .ten.columns                    { width: 83.34%; }
+  .eleven.columns                 { width: 91.34%; }
   .twelve.columns                 { width: 100%; margin-left: 0; }
+  .flexi.columns { flex: auto; }
 
   .one-third.column               { width: 30.6666666667%; }
   .two-thirds.column              { width: 65.3333333333%; }
 
-  .one-half.column                { width: 48%; }
+  .one-half.column                { width: 49%; }
 
   /* Offsets */
   .offset-by-one.column,
@@ -108,7 +110,7 @@
   .offset-by-two-thirds.columns   { margin-left: 69.3333333333%; }
 
   .offset-by-one-half.column,
-  .offset-by-one-half.columns     { margin-left: 52%; }
+  .offset-by-one-half.columns     { margin-left: 51%; }
 
 }
 
