@@ -4,6 +4,7 @@ class Book {
         this.title = this.parseTitle(dom, title);
         this.chapters = new Map();
         this.parseChapters(dom);
+        this.parseAuthor(dom);
     }
 
 
@@ -14,6 +15,10 @@ class Book {
         } else {
             return defaultTitle;
         }
+    }
+
+    parseAuthor(dom) {
+        this.author = "SIS";
     }
 
     parseChapters(dom) {

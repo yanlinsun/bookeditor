@@ -4,11 +4,12 @@ const fs = require('fs');
 const path = require('path');
 const dd = require('./util/dragdrop.js');
 const Book = require('./book.js');
-const uuidv5 = require('uuid').v5;
-const namespace = uuidv5("yanlin.sun/bookeditor", uuidv5.DNS);
+const bookhtml = require('./bookhtml.js');
+const JSZip = require('jszip');
 
 class BookEditor {
     constructor(dir) {
+        this.root = dir;
         this.bookDict = new Map();
         this.currentBook = null;
         this.loadBooks(dir);
@@ -95,101 +96,83 @@ class BookEditor {
             table.removeChild(table.firstElementChild);
         }
         this.setPreviewContent("");
+        this.clearMessage();
     }
 
-    save(book) {
+    save() {
+        if (this.currentBook) {
+            this.saveBook(this.currentBook);
+        } else {
+            this.message("Please select a book first");
+        }
+    }
+
+    saveBook(book) {
+        let file = path.join(this.root, book.title + ".zip");
         this.reorder(book);
-        this.saveMetaInf(book);
-        this.saveMimetype(book);
-        this.saveContentOpf(book);
-        this.saveHtml(book);
+        let zip = new JSZip();
+        this.saveMetaInf(book, zip);
+        this.saveMimeType(book, zip);
+        this.saveContentOpf(book, zip);
+        this.saveToc(book, zip);
+        this.saveChapters(book, zip);
+        this.makeZipFile(file, zip);
     }
 
-    saveMetaInf(book) {
-        var content = [];
-		content.push("<?xml version=\"1.0\"?>");
-		content.push("<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">");
-		content.push("   <rootfiles>");
-		content.push("      <rootfile full-path=\"content.opf\" media-type=\"application/oebps-package+xml\"/>");
-		content.push("   </rootfiles>");
-		content.push("</container>");
-        writeFile("META-INF/content.opf", content.join("\r\n"));
-    
+    makeZipFile(file, zip) {
+        zip
+            .generateNodeStream({type: "nodebuffer", streamFiles: true})
+            .pipe(fs.createWriteStream(file))
+            .on('finish', () => {
+                this.message("Saved to file " + file);
+            });
     }
 
-    saveMimeType(book) {
-        writeFile("mimetype", "application/epub+zip");
+    saveMetaInf(book, zip) {
+        let folder = zip.folder("META-INF");
+        this.writeFile("container.xml", bookhtml.buildMetaInf(book), folder);
     }
 
-    saveContentOpf(book) {
-        var content = [];
-		content.push("<?xml version='1.0' encoding='utf-8'?>");
-		content.push("<package xmlns=\"http://www.idpf.org/2007/opf\" unique-identifier=\"uuid_id\" version=\"2.0\">");
-		content.push("  <opf:metadata xmlns:calibre=\"http://calibre.kovidgoyal.net/2009/metadata\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:opf=\"http://www.idpf.org/2007/opf\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">");
-		content.push("    <opf:meta name=\"calibre:timestamp\" content=\"2020-03-28T09:49:54.609846+00:00\"/>");
-		content.push("    <dc:creator>Unknown</dc:creator>");
-		content.push("    <dc:identifier id=\"uuid_id\" opf:scheme=\"uuid\">" + uuid(book.title) + "</dc:identifier>");
-		content.push("    <dc:title>" + book.title + "</dc:title>");
-		content.push("    <dc:language>zh-CN</dc:language>");
-		content.push("  </opf:metadata>");
-		content.push("  <manifest>");
-        for(let i = 0; i < book.chapters.length; i++) {
-		    content.push("    <item href=\"part" + new String(i).padStart(4, '0') + ".html\" id=\"html\" media-type=\"application/xhtml+xml\"/>");
-        }
-		content.push("    <item href=\"toc.ncx\" id=\"ncx\" media-type=\"application/x-dtbncx+xml\"/>");
-		content.push("  </manifest>");
-		content.push("  <spine toc=\"ncx\">");
-        for(let i = 0; i < book.chapters.length; i++) {
-		    content.push("    <itemref idref=\"part" + new String(i).padStart(4, '0') + ".html\"/>");
-        }
-		content.push("  </spine>");
-		content.push("  <guide/>");
-		content.push("</package>");
-        writeFile("content.opf", content.join("\r\n"));
+    saveMimeType(book, zip) {
+        this.writeFile("mimetype", bookhtml.buildMimeType(book), zip);
     }
 
-    uuid(title) {
-        return uuidv5(title, namespace);
+    saveContentOpf(book, zip) {
+        this.writeFile("content.opf", bookhtml.buildContentOpf(book), zip);
     }
 
-    saveHtml(book) {
+    saveToc(book, zip) {
+        let folder = zip.folder("html");
+        this.writeFile("part0000.html", bookhtml.buildToc(book), folder);
+    }
+
+    saveChapters(book, zip) {
+        let folder = zip.folder("html");
         let i = 0;
         for(var chapter of book.chapters.values()) {
-            writeFile("part" + new String(++i).padStart(4, '0') + ".html", chapter.content);
+            let filename = "part" + new String(++i).padStart(4, '0') + ".html";
+            this.writeFile(filename, bookhtml.buildChapter(book, chapter), folder);
         }
     }
 
-    writeFile(filename, content) {
-        fs.writeFile(filename, content, "utf-8", (err) => {
-            if (err) {
-                console.error(err);
-                this.message(err.toString());
-            } else {
-                this.message("File saved!");
-            }
-        });
+    writeFile(filename, content, zip) {
+        zip.file(filename, content);
     }
 
-    reorder() {
+    reorder(book) {
         let table = this.tocTable();
-        let bookToc = this.book.querySelector("div.toc tbody");
-        let bookContent = this.book.querySelector("div.content");
+        let orderedChapter = new Map();
         Array.from(table.rows).forEach((tr, i) => {
             let id = tr.cells[0].id;
-            let bookLink = bookToc.querySelector("a[href='#" + id + "']").closest("tr");
-            bookToc.insertBefore(bookLink, null);
-            if (tr.cells[0].classList.contains("indent")) {
-                bookLink.cells[0].classList.add("indent");
-            } else {
-                bookLink.cells[0].classList.remove("indent");
-            }
-            let content = bookContent.querySelector("div[id='" + id + "']");
-            bookContent.insertBefore(content, null);
+            let chapter = book.chapters.get(id);
+            chapter.indent = tr.cells[0].classList.contains("indent");
+            orderedChapter.set(id, chapter);
         });
+        book.chapters = orderedChapter;
     }
 
     showBook(book) {
-        this.clearMessage();
+        this.clear();
         this.currentBook = book;
         this.showTitle(book.title);
         this.showToc(book.chapters);
@@ -203,7 +186,6 @@ class BookEditor {
 
     showToc(chapters) {
         let table = this.tocTable();
-        table.innerHTML = "";
         for(let chapter of chapters.values()) {
             let row = table.insertRow();
             let cell = row.insertCell();
