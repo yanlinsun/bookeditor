@@ -4,8 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const dd = require('./util/dragdrop.js');
 const Book = require('./book.js');
-const bookhtml = require('./bookhtml.js');
-const JSZip = require('jszip');
+const ui = require('./ui.js');
+const util = require('./util.js');
+const ZipBook = require('./zipbook.js');
+const HtmlBook = require('./htmlbook.js');
 
 class BookEditor {
     constructor(dir) {
@@ -52,16 +54,7 @@ class BookEditor {
         if (book) {
             this.showBook(book);
         } else {
-            let readFile = new Promise((resolve, reject) => {
-                fs.readFile(fullpath, "utf-8", (err, data) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(data);
-                    }
-                });
-            });
-            let data = await readFile;
+            let data = await util.readFile(fullpath);
             if (data.indexOf("<meta name=\"generator\" content=\"webscraper\"") > 0) {
                 let dom = new DOMParser().parseFromString(data, "text/html");
                 try {
@@ -70,23 +63,12 @@ class BookEditor {
                     this.showBook(book);
                 } catch (e) {
                     console.error(e);
-                    this.message(e.toString());
+                    ui.message(e.toString());
                 }
             } else {
-                this.message("This is not a valid book");
+                ui.message("This is not a valid book");
             }
         }
-    }
-
-    message(msg) {
-        document.getElementById("message").innerHTML = msg;
-        document.getElementById("book").classList.add("hide");
-        document.getElementById("message").classList.remove("hide");
-    }
-
-    clearMessage() {
-        document.getElementById("message").classList.add("hide");
-        document.getElementById("book").classList.remove("hide");
     }
 
     clear() {
@@ -96,67 +78,29 @@ class BookEditor {
             table.removeChild(table.firstElementChild);
         }
         this.setPreviewContent("");
-        this.clearMessage();
+        ui.clearMessage();
     }
 
-    save() {
+    async save() {
         if (this.currentBook) {
-            this.saveBook(this.currentBook);
+            this.reorder(this.currentBook);
+            return await this.saveHtmlBook(this.currentBook);
         } else {
-            this.message("Please select a book first");
+            ui.message("Please select a book first");
         }
+        return null;
     }
 
-    saveBook(book) {
-        let file = path.join(this.root, book.title + ".zip");
-        this.reorder(book);
-        let zip = new JSZip();
-        this.saveMetaInf(book, zip);
-        this.saveMimeType(book, zip);
-        this.saveContentOpf(book, zip);
-        this.saveToc(book, zip);
-        this.saveChapters(book, zip);
-        this.makeZipFile(file, zip);
+    async saveZipBook(book) {
+        let file = new ZipBook(book);
+        await file.saveTo(this.root);
+        return file;
     }
 
-    makeZipFile(file, zip) {
-        zip
-            .generateNodeStream({type: "nodebuffer", streamFiles: true})
-            .pipe(fs.createWriteStream(file))
-            .on('finish', () => {
-                this.message("Saved to file " + file);
-            });
-    }
-
-    saveMetaInf(book, zip) {
-        let folder = zip.folder("META-INF");
-        this.writeFile("container.xml", bookhtml.buildMetaInf(book), folder);
-    }
-
-    saveMimeType(book, zip) {
-        this.writeFile("mimetype", bookhtml.buildMimeType(book), zip);
-    }
-
-    saveContentOpf(book, zip) {
-        this.writeFile("content.opf", bookhtml.buildContentOpf(book), zip);
-    }
-
-    saveToc(book, zip) {
-        let folder = zip.folder("html");
-        this.writeFile("part0000.html", bookhtml.buildToc(book), folder);
-    }
-
-    saveChapters(book, zip) {
-        let folder = zip.folder("html");
-        let i = 0;
-        for(var chapter of book.chapters.values()) {
-            let filename = "part" + new String(++i).padStart(4, '0') + ".html";
-            this.writeFile(filename, bookhtml.buildChapter(book, chapter), folder);
-        }
-    }
-
-    writeFile(filename, content, zip) {
-        zip.file(filename, content);
+    async saveHtmlBook(book) {
+        let file = new HtmlBook(book);
+        await file.saveTo(this.root);
+        return file;
     }
 
     reorder(book) {
@@ -202,11 +146,20 @@ class BookEditor {
             this.addTocButton(cell, "delete", this.deleteToc);
             if (chapter.indent) {
                 this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
+                this.addTocButton(cell, "merge_type", this.mergeUp);
             } else {
                 this.addTocButton(cell, "format_indent_increase", this.indentInToc);
             }
         }
         dd.draggable(table);
+    }
+
+    mergeUp(id) {
+        let chapter = this.currentBook.chapters.get(id);
+        if (chapter.parentChapter) {
+            chapter.parentChapter.content = chapter.parentChapter.content + chapter.content;
+            this.deleteToc(id);
+        }
     }
 
     indentOutToc(id) {
@@ -293,7 +246,7 @@ class BookEditor {
     deleteToc(id) {
         let row = this.tocCell(id).parentNode;
         row.parentNode.removeChild(row);
-        this.currentBook.chapters.delete(id);
+        this.currentBook.delete(id);
     }
 
     selectToc(id) {

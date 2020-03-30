@@ -11,7 +11,7 @@
   font-family: 'Material Icons';
   font-weight: normal;
   font-style: normal;
-  font-size: 24px;  /* Preferred icon size */
+  font-size: 16px;  /* Preferred icon size */
 /*  display: inline-block; */
   line-height: 1;
   text-transform: none;
@@ -55,6 +55,7 @@ div {
 flex.columns { flex: auto; }
 .two.columns { flex: none; width: 20%; }
 .four.columns { flex: none; width: 40%; }
+.one-half.columns { flex: none; width: 50%; }
 
 .fullheight {
     height: 100%;
@@ -105,7 +106,7 @@ flex.columns { flex: auto; }
     visibility: hidden;
     display: inline-block;
     float: right;
-    margin: 5px;
+    margin: 2px;
 }
 
 .toc:hover input[type=button] {
@@ -121,7 +122,7 @@ flex.columns { flex: auto; }
     visibility: hidden;
     display: inline-block;
     float: right;
-    margin: 5px;
+    margin: 2px;
 }
 
 .toc:hover .button-primary {
@@ -175,4 +176,8 @@ input .fill_available {
 
 .message {
     padding: 5px;
+}
+
+.error {
+    color: red;
 }
