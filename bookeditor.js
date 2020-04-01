@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const dd = require('./util/dragdrop.js');
 const Book = require('./book.js');
+const EditorSavedBook = require('./editorsavedbook.js');
 const ui = require('./ui.js');
 const util = require('./util.js');
 const ZipBook = require('./zipbook.js');
@@ -51,23 +52,27 @@ class BookEditor {
 
     async parseBook(fullpath) {
         let book = this.bookDict.get(fullpath);
-        if (book) {
-            this.showBook(book);
-        } else {
-            let data = await util.readFile(fullpath);
-            if (data.indexOf("<meta name=\"generator\" content=\"webscraper\"") > 0) {
-                let dom = new DOMParser().parseFromString(data, "text/html");
-                try {
-                    let book = new Book(dom, path.basename(fullpath, ".html"));
+        try {
+            if (!book) {
+                let data = await util.readFile(fullpath);
+                if (data.indexOf("<meta name=\"generator\" content=\"webscraper\"") > 0) {
+                    let dom = new DOMParser().parseFromString(data, "text/html");
+                    book = new Book(dom, path.basename(fullpath, ".html"));
                     this.bookDict.set(fullpath, book);
-                    this.showBook(book);
-                } catch (e) {
-                    console.error(e);
-                    ui.message(e.toString());
+                } else if (data.indexOf("<meta name=\"DC.contributor\"") > 0 && data.indexOf("content=\"BookEditor\"") > 0) {
+                    let dom = new DOMParser().parseFromString(data, "text/html");
+                    book = new EditorSavedBook(dom, path.basename(fullpath, ".html"));
+                    this.bookDict.set(fullpath, book);
                 }
-            } else {
-                ui.message("This is not a valid book");
             }
+            if (!book) {
+                ui.message("This is not a valid book");
+            } else {
+                this.showBook(book);
+            }
+        } catch (e) {
+            console.error(e);
+            ui.message(e.toString());
         }
     }
 
@@ -118,14 +123,26 @@ class BookEditor {
     showBook(book) {
         this.clear();
         this.currentBook = book;
-        this.showTitle(book.title);
+        this.showMeta(book);
         this.showToc(book.chapters);
     }
 
-    showTitle(title) {
-        let table = this.tocTable();
-        let c = table.createCaption();
-        c.innerHTML = title;
+    setMeta(id, value) {
+        if (value) {
+            let meta = document.querySelector("input#book_" + id);
+            if (meta) {
+                meta.value = value;
+            }
+        }
+    }
+
+    showMeta(book) {
+        this.setMeta("title", book.title);
+        this.setMeta("author", book.authro);
+        this.setMeta("date", book.date);
+        this.setMeta("publisher", book.publisher);
+        this.setMeta("tags", book.tags);
+        this.setMeta("language", book.language);
     }
 
     showToc(chapters) {
@@ -144,21 +161,45 @@ class BookEditor {
             c.ondblclick = () => this.editToc(cell.id);
             cell.appendChild(c);
             this.addTocButton(cell, "delete", this.deleteToc);
+            this.addTocButton(cell, "merge_type", this.mergeUp);
             if (chapter.indent) {
                 this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
-                this.addTocButton(cell, "merge_type", this.mergeUp);
             } else {
                 this.addTocButton(cell, "format_indent_increase", this.indentInToc);
             }
+            this.addTocButton(cell, "vertical_align_top", this.moveFirst);
+            this.addTocButton(cell, "vertical_align_bottom", this.moveLast);
         }
         dd.draggable(table);
     }
 
+    moveFirst(id) {
+        let cell = this.tocCell(id);
+        let row = cell.parentNode;
+        let table = this.tocTable();
+        table.insertBefore(row, table.firstElementChild);
+        cell.removeTocButton(cell, "merge_type");
+    }
+
+    moveLast(id) {
+        let cell = this.tocCell(id);
+        let row = cell.parentNode;
+        let table = this.tocTable();
+        table.insertBefore(row, null);
+        this.addTocButton(cell, "merge_type", this.mergeUp);
+    }
+
     mergeUp(id) {
-        let chapter = this.currentBook.chapters.get(id);
-        if (chapter.parentChapter) {
-            chapter.parentChapter.content = chapter.parentChapter.content + chapter.content;
-            this.deleteToc(id);
+        let cell = this.tocCell(id);
+        let previousRow = cell.parentNode.previousElementSibling;
+        if (previousRow) {
+            let previousId = previousRow.firstElementChild.id;
+            let chapter = this.currentBook.chapters.get(id);
+            let previousChapter = this.currentBook.chapters.get(previousId);
+            if (previousChapter) {
+                previousChapter.content += "\r\n" + chapter.content;
+                this.deleteToc(id);
+            }
         }
     }
 
@@ -168,6 +209,7 @@ class BookEditor {
         if (indent) {
             cell.classList.remove("indent");
             this.removeTocButton(cell, "format_indent_decrease");
+            this.removeTocButton(cell, "merge_type");
             this.addTocButton(cell, "format_indent_increase", this.indentInToc);
         }
     }
@@ -179,15 +221,20 @@ class BookEditor {
             cell.classList.add("indent");
             this.removeTocButton(cell, "format_indent_increase");
             this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
+            this.addTocButton(cell, "merge_type", this.mergeUp);
         }
     }
 
     removeTocButton(cell, name) {
         let btn = cell.querySelector("button[name='" + name + "']");
-        cell.removeChild(btn);
+        if (btn)
+            cell.removeChild(btn);
     }
 
     addTocButton(cell, name, fn) {
+        let existing = cell.querySelector("button[name='" + name + "']");
+        if (existing)
+            return;
         let btn = document.createElement("BUTTON");
         btn.name = name;
         btn.innerText = name;

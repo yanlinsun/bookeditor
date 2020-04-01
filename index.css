@@ -69,6 +69,10 @@ flex.columns { flex: auto; }
     overflow-y: auto;
 }
 
+.metadata {
+    width: 100%;
+}
+
 .book_toc {
     background-color: var(--color-bg);
 }

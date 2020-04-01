@@ -33,7 +33,7 @@ async function savebook() {
             ui.message("Converting book");
             let filename = await convertAzw3(file.filename, file.filename.replace(path.extname(file.filename), ".azw3"));
             ui.message("Delete temp file");
-            file.delete();
+            //file.delete();
             ui.message("Convert successful to " + filename);
         }
     } else {
@@ -48,7 +48,7 @@ function check() {
 }
 
 async function convertAzw3(src, tgt) {
-    let cmd = '"' + "/Applications/calibre.app/Contents/MacOS/ebook-convert" + '" "' + src + '" "' + tgt + '"';
+    let cmd = '"' + "/Applications/calibre.app/Contents/MacOS/ebook-convert" + '" "' + src + '" "' + tgt + '" --no-inline-toc --chapter-mark both --book-producer "EbookEditor" --language "zh_CN"';
     return await new Promise((resolve, reject) => {
         exec(cmd, (err, stdout, strerr) => {
             if (err) {
