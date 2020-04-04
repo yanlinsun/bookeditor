@@ -36,6 +36,12 @@ class EditorSavedBook {
                 case "DC.date":
                     this.date = new Date(m.content);
                     break;
+                case "DC.publisher":
+                    this.publisher = m.content;
+                    break;
+                case "DC.subject":
+                    this.tags = m.content;
+                    break;
             }
         }
     }

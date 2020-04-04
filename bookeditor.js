@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { exec, spawn } = require('child_process');
 const dd = require('./util/dragdrop.js');
 const Book = require('./book.js');
 const EditorSavedBook = require('./editorsavedbook.js');
@@ -88,12 +89,46 @@ class BookEditor {
 
     async save() {
         if (this.currentBook) {
+            ui.message("Saving book");
+            this.updateBookMeta(this.currentBook);
             this.reorder(this.currentBook);
-            return await this.saveHtmlBook(this.currentBook);
+            let file = await this.saveHtmlBook(this.currentBook);
+            if (file) {
+                ui.message("Html Book saved. Converting to azw3");
+                let filename = await this.convertAzw3(file.filename, file.filename.replace(path.extname(file.filename), ".azw3"));
+                //file.delete();
+                ui.message("Convert successful to " + filename);
+            } else {
+                ui.error("File save failed");
+            }
         } else {
             ui.message("Please select a book first");
         }
         return null;
+    }
+
+    async convertAzw3(src, tgt) {
+        let cmd = '"' + "/Applications/calibre.app/Contents/MacOS/ebook-convert" + '" "' + src + '" "' + tgt + '" --no-inline-toc --chapter-mark both --book-producer "EbookEditor" --language "zh_CN"';
+        return await new Promise((resolve, reject) => {
+            exec(cmd, (err, stdout, strerr) => {
+                if (err) {
+                    console.error(err);
+                    ui.message(err, true);
+                    reject(err);
+                } else {
+                    resolve(tgt);
+                }
+            })
+        });
+    }
+
+    updateBookMeta(book) {
+        book.title = document.querySelector("input#book_title").value;
+        book.author = document.querySelector("input#book_author").value;
+        book.date = document.querySelector("input#book_date").value;
+        book.publisher = document.querySelector("input#book_publisher").value;
+        book.tags = document.querySelector("input#book_tags").value;
+        book.language = document.querySelector("input#book_language").value;
     }
 
     async saveZipBook(book) {
@@ -111,12 +146,8 @@ class BookEditor {
     reorder(book) {
         let table = this.tocTable();
         let orderedChapter = new Map();
-        Array.from(table.rows).forEach((tr, i) => {
-            let id = tr.cells[0].id;
-            let chapter = book.chapters.get(id);
-            chapter.indent = tr.cells[0].classList.contains("indent");
-            orderedChapter.set(id, chapter);
-        });
+        Array.from(table.querySelectorAll("td:not(.ignore)"))
+            .forEach(cell => orderedChapter.set(cell.id, cell.chapter));
         book.chapters = orderedChapter;
     }
 
@@ -151,26 +182,83 @@ class BookEditor {
             let row = table.insertRow();
             let cell = row.insertCell();
             cell.classList.add("toc");
+            cell.chapter = chapter;
             cell.id = chapter.id;
             if (chapter.indent) {
-                cell.classList.add("indent");
+                cell.classList.add("indent" + chapter.indent);
             }
             cell.onclick = () => this.selectToc(cell.id);
             let c = document.createElement("SPAN");
             c.innerHTML = chapter.title;
             c.ondblclick = () => this.editToc(cell.id);
             cell.appendChild(c);
-            this.addTocButton(cell, "delete", this.deleteToc);
-            this.addTocButton(cell, "merge_type", this.mergeUp);
-            if (chapter.indent) {
-                this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
+            if (chapter.ignore) {
+                cell.classList.add("hide");
+                cell.classList.add("ignore");
+                this.addTocButton(cell, "add", this.addToc);
             } else {
-                this.addTocButton(cell, "format_indent_increase", this.indentInToc);
+                this.addTocButton(cell, "delete", this.deleteToc);
             }
+            this.addTocButton(cell, "merge_type", this.mergeUp);
+            this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
+            this.addTocButton(cell, "format_indent_increase", this.indentInToc);
             this.addTocButton(cell, "vertical_align_top", this.moveFirst);
             this.addTocButton(cell, "vertical_align_bottom", this.moveLast);
         }
         dd.draggable(table);
+    }
+
+    perform(action) {
+        switch (action) {
+            case "save":
+                return this.save();
+            case "show_all":
+                return this.showAll();
+        }
+        let id = this.getSelectedId();
+        if (!id)
+            return null;
+        switch (action) {
+            case "merge_up":
+                this.mergeUp(id);
+                break;
+            case "move_first":
+                this.moveFirst(id);
+                break;
+            case "move_last":
+                this.moveLast(id);
+                break;
+            default:
+                break;
+        }
+    }
+
+    showAll() {
+        let btn = document.querySelector("#show_all");
+        let table = this.tocTable();
+        if (btn.showAll) {
+            btn.innerText = "check_box_outline_blank";
+            btn.showAll = false;
+            let allrows = table.querySelectorAll("td");
+            Array.from(allrows).map(td => td.chapter.ignore ? td.classList.add("hide") : "");
+            btn.classList.add("pressed");
+        } else {
+            btn.innerText = "check_box";
+            btn.showAll = true;
+            let deleted = table.querySelectorAll("td.hide");
+            if (deleted)
+                Array.from(deleted).map(tr => tr.classList.remove("hide"));
+            btn.classList.remove("pressed");
+        }
+    }
+
+    getSelectedId() {
+        let table = this.tocTable();
+        let selected = table.querySelector("td.selected");
+        if (selected) {
+            return selected.id;
+        }
+        return null;
     }
 
     moveFirst(id) {
@@ -178,7 +266,6 @@ class BookEditor {
         let row = cell.parentNode;
         let table = this.tocTable();
         table.insertBefore(row, table.firstElementChild);
-        cell.removeTocButton(cell, "merge_type");
     }
 
     moveLast(id) {
@@ -186,49 +273,65 @@ class BookEditor {
         let row = cell.parentNode;
         let table = this.tocTable();
         table.insertBefore(row, null);
-        this.addTocButton(cell, "merge_type", this.mergeUp);
     }
 
     mergeUp(id) {
         let cell = this.tocCell(id);
         let previousRow = cell.parentNode.previousElementSibling;
+        while (previousRow != null && previousRow.firstElementChild.chapter.ignore == true) {
+            previousRow = previousRow.previousElementSibling;
+        }
         if (previousRow) {
             let previousId = previousRow.firstElementChild.id;
-            let chapter = this.currentBook.chapters.get(id);
             let previousChapter = this.currentBook.chapters.get(previousId);
             if (previousChapter) {
-                previousChapter.content += "\r\n" + chapter.content;
+                previousChapter.content += "\r\n" + cell.chapter.content;
+                this.changeTocText(id, cell.chapter.title + " (merged)");
                 this.deleteToc(id);
             }
         }
     }
 
     indentOutToc(id) {
-        let cell = this.tocCell(id);
-        let indent = cell.classList.contains("indent");
-        if (indent) {
-            cell.classList.remove("indent");
-            this.removeTocButton(cell, "format_indent_decrease");
-            this.removeTocButton(cell, "merge_type");
-            this.addTocButton(cell, "format_indent_increase", this.indentInToc);
-        }
+        this.indentToc(id, -1);
     }
 
     indentInToc(id) {
-        let cell = this.tocCell(id);
-        let indent = cell.classList.contains("indent");
-        if (!indent) {
-            cell.classList.add("indent");
-            this.removeTocButton(cell, "format_indent_increase");
-            this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
-            this.addTocButton(cell, "merge_type", this.mergeUp);
-        }
+        this.indentToc(id, 1);
     }
 
-    removeTocButton(cell, name) {
+    indentToc(id, direction) {
+        let cell = this.tocCell(id);
+        let indent = cell.chapter.indent;
+        if (indent > 0) {
+            cell.classList.remove("indent" + indent);
+            indent += direction;
+        }
+        if (indent < 0) indent = 0;
+        else if (indent > 2) indent = 2;
+        if (indent == 0) {
+            this.hideTocButton(cell, "format_indent_decrease");
+            this.unhideTocButton(cell, "format_indent_increase");
+        } else if (indent == 2) {
+            this.hideTocButton(cell, "format_indent_increase");
+            this.unhideTocButton(cell, "format_indent_decrease");
+        } else {
+            this.unhideTocButton(cell, "format_indent_increase");
+            this.unhideTocButton(cell, "format_indent_decrease");
+        }
+        cell.chapter.indent = indent;
+    }
+
+    hideTocButton(cell, name) {
         let btn = cell.querySelector("button[name='" + name + "']");
         if (btn)
-            cell.removeChild(btn);
+            btn.classList.add("hide");
+    }
+
+    unhideTocButton(cell, name) {
+        let btn = cell.querySelector("button[name='" + name + "']");
+        if (btn)
+            btn.classList.remove("hide");
     }
 
     addTocButton(cell, name, fn) {
@@ -247,65 +350,102 @@ class BookEditor {
         cell.appendChild(btn);
     }
 
+    changeTocButton(cell, target, name, fn) {
+        let btn = cell.querySelector("button[name='" + target + "']");
+        if (btn)
+            return;
+        btn.name = name;
+        btn.innerText = name;
+        btn.onclick = () => {
+            event.stopPropagation();
+            fn.apply(this, [cell]);
+        };
+    }
+
     editToc(id) {
         let cell = this.tocCell(id);
         let text = cell.querySelector("SPAN");
         text.classList.add("hide");
-        let input = document.createElement("INPUT");
-        input.type = "text";
-        input.value = text.innerHTML;
-        input.classList.add("fill_available");
-        input.style.color = "black";
-        input.onkeydown = e => {
-            if (e.key == "Enter") {
-                if (e.defaultPrevented) { return; }
+
+        let input = cell.querySelector("input");
+        if (input)
+            input.classList.remove("hide");
+        else {
+            input = document.createElement("INPUT");
+            input.type = "text";
+            input.value = text.innerHTML;
+            input.classList.add("fill_available");
+            input.style.color = "black";
+            input.onkeydown = e => {
+                if (e.key == "Enter") {
+                    if (e.defaultPrevented) { return; }
+                    if (e.target.value != "") {
+                        this.changeTocText(id, e.target.value);
+                    }
+                    input.classList.add("hide");
+                    text.classList.remove("hide");
+                    e.preventDefault();
+                } else if (e.key == "Home") {
+                    input.setSelectionRange(0, 0);
+                    e.preventDefault();
+                } else if (e.key == "End") {
+                    input.setSelectionRange(input.value.length, input.value.length);
+                    e.preventDefault();
+                }
+            };
+            input.onblur = e => {
                 if (e.target.value != "") {
                     this.changeTocText(id, e.target.value);
                 }
-                cell.removeChild(input);
-                input.onkeydown = null;
-                input.onblur = null;
+                input.classList.add("hide");
                 text.classList.remove("hide");
-                e.preventDefault();
-            }
-        };
-        input.onblur = e => {
-            if (e.target.value != "") {
-                this.changeTocText(id, e.target.value);
-            }
-            cell.removeChild(input);
-            input.onkeydown = null;
-            input.onblur = null;
-            text.classList.remove("hide");
-        };
-        cell.appendChild(input);
-        input.focus();
+            };
+            cell.appendChild(input);
+            input.focus();
+        }
     }
 
     changeTocText(id, value) {
         let cell = this.tocCell(id);
         let text = cell.querySelector("SPAN");
         text.innerHTML = value;
-        let chapter = this.currentBook.chapters.get(id);
-        chapter.title = value;
+        cell.chapter.title = value;
     }
 
     deleteToc(id) {
-        let row = this.tocCell(id).parentNode;
-        row.parentNode.removeChild(row);
-        this.currentBook.delete(id);
+        let showAll = document.querySelector("#show_all").showAll;
+        let cell = this.tocCell(id);
+        cell.classList.add("ignore");
+        if (!showAll)
+            cell.classList.add("hide");
+        cell.chapter.ignore = true;
+        this.changeTocButton(cell, "delete", "add", this.addToc);
+    }
+
+    addToc(id) {
+        let cell = this.tocCell(id);
+        cell.classList.remove("ignore");
+        cell.classList.remove("hide");
+        cell.chapter.ignore = false;
+        this.changeTocButton(cell, "add", "delete", this.deleteToc);
     }
 
     selectToc(id) {
         let table = this.tocTable();
-        // unselect other toc
-        let cells = table.querySelectorAll("td.selected");
-        Array.from(cells).forEach(c => c.classList.remove("selected"));
-
         let cell = this.tocCell(id);
-        cell.classList.add("selected");
-
-        this.showPreview(id);
+        let selected = Array.from(table.querySelectorAll("td.selected"));
+        Array.from(selected).forEach(c => c.classList.remove("selected"));
+        if (event.shiftKey && selected && selected.length > 0) {
+            let i = cell.parentNode.rowIndex;
+            let b = Math.min(i, selected[0].parentNode.rowIndex);
+            let e = Math.max(i, selected[selected.length - 1].parentNode.rowIndex);
+            for(; b <= e; b++)
+                table.rows[b].firstElementChild.classList.add("selected");
+        } else {
+            // unselect other toc
+            cell.classList.add("selected");
+            this.showPreview(id);
+        }
     }
 
     showPreview(id) {
@@ -319,7 +459,7 @@ class BookEditor {
     }
 
     tocCell(id) {
-        return this.tocTable().querySelector("td[id='" + id + "']");
+        return this.tocTable().querySelector("#" + id);
     }
 
     tocTable() {

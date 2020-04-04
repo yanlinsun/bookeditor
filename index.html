@@ -2,42 +2,53 @@
 <html>
     <head>
         <meta charset=utf-8"></meta>
-        <link href="index.css" rel="stylesheet" type="text/css"></link>
-        <link rel="stylesheet" href="skeleton/normalize.css"></link>
-        <link rel="stylesheet" href="skeleton/skeleton.css"></link>
+        <link rel="stylesheet" type="text/css" href="skeleton/normalize.css"></link>
+        <link rel="stylesheet" type="text/css" href="skeleton/skeleton.css"></link>
+        <link rel="stylesheet" type="text/css" href="index.css"></link>
         <title>Book Editor</title>
     </head>
-    <body class="one-row">
-        <div class="one-row fullwidth">
-            <div class="one-column two columns">
-                <div class="one-row fullwidth">
-                    <input type="button" id="book_file" value="Open" class="button-primary"></input>&nbsp;&nbsp;
+    <body class="row-box">
+        <div class="row-box">
+            <div class="column-box two-columns">
+                <div class="row-box buttonbar withelement">
+                    <input type="button" id="book_file" value="Open" class="button-primary"></input>
                     <input type="button" id="book_save" value="Save" class="button-primary"></input>
                 </div>
-                <div class="fullheight fullwidth vscrollable">
-                    <table id="book_list" class="selectable fullwidth">
+                <div class="vscrollable withelement">
+                    <table id="book_list" class="selectable">
                     </table>
                 </div>
             </div>
-            <div class="flex columns">
-                <div id="message" class="fullwidth message hide">
-                </div>
-                <div id="book" class="one-row fullwidth fullheight">
-                    <div class="one-half columns book_toc vscrollable">
-                        <table id="book_toc" class="fullwidth selectable">
-                        </table>
+            <div class="column-box flex-column">
+                <div class="row-box buttonbar withelement">
+                    <button id="move_first" class="button-primary material-icons">vertical_align_top</button>
+                    <button id="move_last" class="button-primary material-icons">vertical_align_bottom</button>
+                    <button id="merge_up" class="button-primary material-icons">merge_type</button>
+                    <button id="show_all" class="button-primary material-icons check-box">check_box_outline_blank</button>
+                    <label for="save_all" class="check-box">Display Deleted</label>
+                    <div id="message" class="message hide withelement">
                     </div>
-                    <div class="one-column">
-                        <div class="one-column">
-                            <div class="one-row"><label class="two columns">Title:</label><input type="text" id="book_title" class="metadata"></input></div>
-                            <div class="one-row"><label class="two columns">Author:</label><input type="text" id="book_author" class="metadata"></input></div>
-                            <div class="one-row"><label class="two columns">Date:</label><input type="date" id="book_date" class="metadata"></input></div>
-                            <div class="one-row"><label class="two columns">Publisher:</label><input type="text" id="book_publisher" class="metadata"></input></div>
-                            <div class="one-row"><label class="two columns">Tags:</label><input type="text" id="book_tags" class="metadata"></input></div>
-                            <div class="one-row"><label class="two columns">Language:</label><input type="text" id="book_language" class="metadata"></input></div>
+                </div>
+                <div class="row-box flex-column">
+                    <div class="one-half-columns fullheight">
+                        <div class="column-box book_toc fullheight flex-column">
+                            <div class="flex-column row-box vscrollable withelement">
+                                <table id="book_toc" class="selectable flex-column">
+                                </table>
+                            </div>
                         </div>
-                        <div class="flexi columns fullheight vscrollable">
-                            <div id="preview_container" class="preview_container fullwidth">
+                    </div>
+                    <div class="column-box">
+                        <div class="column-box withelement noflex">
+                            <div class="row-box"><label class="two columns">Title:</label><input type="text" id="book_title" class="metadata"></input></div>
+                            <div class="row-box"><label class="two columns">Author:</label><input type="text" id="book_author" class="metadata"></input></div>
+                            <div class="row-box"><label class="two columns">Date:</label><input type="date" id="book_date" class="metadata"></input></div>
+                            <div class="row-box"><label class="two columns">Publisher:</label><input type="text" id="book_publisher" class="metadata"></input></div>
+                            <div class="row-box"><label class="two columns">Tags:</label><input type="text" id="book_tags" class="metadata"></input></div>
+                            <div class="row-box"><label class="two columns">Language:</label><input type="text" id="book_language" class="metadata" value="zho"></input></div>
+                        </div>
+                        <div class="flex-column vscrollable">
+                            <div id="preview_container" class="preview_container  withelement">
                             </div>
                         </div>
                     </div>

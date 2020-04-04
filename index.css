@@ -47,15 +47,52 @@ body {
 
 div {
     flex: auto;
-    padding: 5px;
 }
-.one-row { display: flex; flex-flow: row; }
-.one-column { display: flex; flex-flow: column; }
 
-flex.columns { flex: auto; }
-.two.columns { flex: none; width: 20%; }
-.four.columns { flex: none; width: 40%; }
-.one-half.columns { flex: none; width: 50%; }
+div.withelement {
+    padding: 10px;
+}
+
+.buttonbar {
+    flex: none;
+}
+
+button,
+input[type="button"] {
+    margin-right: 10px;
+    margin-bottom: 0px;
+}
+
+button.pressed,
+input[type="button"].pressed {
+  background-color: #1EAEDB;
+  border-color: #1EAEDB; 
+}
+
+button.check-box,
+button.check-box:hover,
+button.check-box:focus {
+    background-color:transparent;
+    border-color: transparent;
+    min-width: 10px;
+    color: #000;
+    margin-right: 0px;
+    padding-right: 0px;
+}
+label.check-box {
+    height: 40px;
+    line-height: 40px;
+    vertical-align:center;
+}
+
+.row-box { display: flex; flex-flow: row; }
+.column-box { display: flex; flex-flow: column; }
+
+.noflex { flex: none; }
+.flex-column { flex: auto; }
+.two-columns { flex: none; width: 20%; }
+.four-columns { flex: none; width: 40%; }
+.one-half-columns { flex: none; width: 50%; }
 
 .fullheight {
     height: 100%;
@@ -85,11 +122,6 @@ flex.columns { flex: auto; }
 }
 
 .toc {
-    cursor: default;
-    background-color: transparent;
-    padding: 5px;
-    vertical-align: middle;
-    width: -webkit-fill-available;
 }
 
 .selectable td:hover ,
@@ -102,48 +134,37 @@ flex.columns { flex: auto; }
     color: white;
 }
 
-.toc.indent {
-    padding-left: 40px;
-}
+.toc.indent1 { padding-left: 20px; }
+.toc.indent2 { padding-left: 40px; }
 
-.toc input[type=button] {
+.toc input[type=button],
+.toc button.button-primary {
     visibility: hidden;
     display: inline-block;
     float: right;
-    margin: 2px;
+    margin-right: 2px;
+    min-width: 40px;
 }
 
-.toc:hover input[type=button] {
+.toc:hover input[type=button],
+.toc:hover button.button-primary  {
     visibility: visible;
 }
-
+.toc.selected button.button-primary ,
 .toc.selected input[type=button] {
     visibility: visible;
     color: white;
 }
 
-.toc .button-primary {
-    visibility: hidden;
-    display: inline-block;
-    float: right;
-    margin: 2px;
+.toc.ignore {
+    text-decoration: line-through;
 }
 
-.toc:hover .button-primary {
-    visibility: visible;
-}
-
-.toc.selected .button-primary {
-    visibility: visible;
-    color: white;
-}
-
-.toc .button-primary .delete {
+.toc .button-primary.delete {
     icon: url(./images/trash.png);
 }
 
 .toc span {
-    height: -webkit-fill-available;
     vertical-align: middle;
 }
 
@@ -174,6 +195,7 @@ input .fill_available {
   --color-border:   hsl(0,0%,88%);
   --color-bg:       hsl(0,0%,96%);
   --color-font:     hsl(0,0%,0%);
+  --color-disabled: hsl(0,0%,90%);
 
   --color-accent:   black; /* Fallback */
 }

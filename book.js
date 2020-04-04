@@ -6,7 +6,8 @@ const nzhhk = require('nzh/hk');
 
 const SEP_CHAR = "`!@#$%^&*()+={}\\[\\]\\\\|;':\\\",.<>\/?～·！¥…（）【】「」、；：，。《》？●　";
 const EXP_SEP = new RegExp("[" + SEP_CHAR + "]", "gm");
-const EXP_SEQ = /第?\s*([0-9零〇一二三四五六七八九十百千万]+)\s*[章节篇回]?/g;
+const FULL_WITH_NUM = String.fromCodePoint(65296,65297,65298,65299,65300,65301,65302,65303,65304,65305); // 0-9
+const SEQ_PATTERN = "第?\\s*([0-9" + FULL_WITH_NUM + "零〇一二三四五六七八九十百千万]+)\\s*[章节篇回]?";
 const CH_NUM = "零〇一二三四五六七八九"
 const CH_UNIT = "十百千万";
 
@@ -69,8 +70,13 @@ class Book {
                 let span = link.parentNode.querySelector("span");
                 if (span) {
                     let indentx = span.classList.toString().match(/indent(\d)?/);
-                    if (indentx && indentx.length > 1) {
-                        t.indent = parseInt(indentx[1], 10);
+                    if (indentx) {
+                        if (indentx[1] == null)
+                            t.indent = 1;
+                        else
+                            t.indent = parseInt(indentx[1], 10);
+                        if (t.indent == NaN)
+                            t.indent = 1;
                     }
                 }
                 t.title = this.normalizeChapterTitle(link.innerText);
@@ -85,17 +91,13 @@ class Book {
                 if (!this.publisher) {
                     this.parsePublisher(div.innerHTML);
                 }
-                t.content = this.normalize(div.innerHTML);
-                if (t.indent && t.content.length < 200)
-                {
-                    this.deletedChapters.set(t.id, t);
-                } else {
-                    this.chapters.set(t.id, t);
-                }
+                t.ignore = t.indent && t.content.length < 200;
+                this.chapters.set(t.id, t); // put it first, in case content has sub chapter
+                t.content = this.normalize(t, div.innerHTML);
             }
         });
         let sortedChapters = new Map();
-        Array.from(this.chapters.values()).sort((a, b) => a.order - b.order).map(c => sortedChapters.set(c.id, c));
+        Array.from(this.chapters.values()).sort((a, b) => a.indent == b.indent ? a.order - b.order : 0).map(c => sortedChapters.set(c.id, c));
         this.chapters = sortedChapters;
         
     }
@@ -109,28 +111,61 @@ class Book {
         this.chapters.delete(id);
     }
 
-    normalize(html) {
+    normalize(chapter, html) {
         html = html.replace(/<div class="title">.*<\/div>/g, "");
         html = html.replace(/<a href="#top">Back<\/a>/g, "");
         html = html.replace(/\[.*本帖最后由.*编辑.*\]/g, "");
         html = html.replace(/<\/?\w+\s*[^>]*>/g, "");
         html = html.replace(/&nbsp;/g, "");
         html = html.trim().replace(/^\s*$/mg, "</p><p>");
-        html = html.replace(/[\r\n]/gm, "");
+        html = html.replace(/[\r\n]+/g, "");
         html = html.replace(/\s*<\/p>/g, "</p>");
         html = html.replace(/<p>\s*/g, "<p>");
-        html = html.replace(/<\/p>\s*<p>/g, "</p>\n<p>");
         html = html.replace(/<p><\/p>/g, "");
-        return "<p>" + html + "</p>";
+        html = html.replace(/<\/p><p>/g, "</p>\n<p>");
+        html = "<p>" + html + "</p>";
+        // find possible chapters in content
+        let result = null;
+        let match, lastMatch;
+        let cnt = 1;
+        let exp = new RegExp("^<p>" + SEQ_PATTERN + "<\\/p>$", "gm");
+        while((match = exp.exec(html)) !== null) {
+            if (lastMatch) {
+                let t = {};
+                t.id = chapter.id + cnt++;
+                t.indent = chapter.indent + 1;
+                t.title = lastMatch[0].replace(/<\/?p>/g, "");
+                t.order = chapter.order + 1;
+                t.content = html.substring(lastMatch.index, match.index).replace(lastMatch[0] + "\n", "");
+                t.ignore = t.indent && t.content.length < 200;
+                this.chapters.set(t.id, t);
+            } else {
+                result = html.substring(0, match.index);
+            }
+            lastMatch = match;
+        }
+        if (lastMatch) {
+            let t = {};
+            t.id = chapter.id + cnt++;
+            t.indent = chapter.indent + 1;
+            t.title = lastMatch[0].replace(/<\/?p>/g, "");;
+            t.order = chapter.order + 1;
+            t.content = html.substring(lastMatch.index);
+            t.ignore = t.indent && t.content.length < 200;
+            this.chapters.set(t.id, t);
+        }
+        if (!result) 
+            result = html;
+        return result;
     }
 
     normalizeChapterTitle(title) {
-        let reg = new RegExp("[" + SEP_CHAR + "]?" + this.title + "[" + SEP_CHAR + "]?");
+        let reg = new RegExp("[" + SEP_CHAR + "]?" + this.title + "\\1");
         return title.replace(reg, "").replace(EXP_SEP, ' ').trim();
     }
 
     parseOrder(title) {
-        let match = title.match(EXP_SEQ);
+        let match = title.match(new RegExp(SEQ_PATTERN, "g"));
         if (match) {
             if (match.length > 0) {
                 let seq = match[0];

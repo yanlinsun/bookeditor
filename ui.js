@@ -5,14 +5,16 @@ function message(msg, error) {
     msgdiv.classList.remove("hide");
     if (error)
         msgdiv.classList.add("error");
-    document.getElementById("book").classList.add("hide");
+}
+
+function error(msg) {
+    message(msg, error);
 }
 
 function clearMessage() {
     let msgdiv = document.getElementById("message");
     msgdiv.classList.remove("error");
     msgdiv.classList.add("hide");
-    document.getElementById("book").classList.remove("hide");
 }
 
-module.exports = { message, clearMessage }
+module.exports = { message, clearMessage, error }

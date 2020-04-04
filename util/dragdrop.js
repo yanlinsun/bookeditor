@@ -20,8 +20,14 @@ const DD = {
     },
 
     _GetDraggingTarget : function(e, excludes) {
-        let row = e.target;
+        let objs = document.elementsFromPoint(e.x, e.y);
+        let row = null;
+        if (objs)
+            row = objs[0];
+        if (!row) return null;
         while (row.tagName !== "TR" && row.parentNode) {
+            if (row.tagName == "INPUT" && row.type == "text")
+                return null;
             row = row.parentNode;
         }
         if (!row.__dd_draggable || row.tagName !== "TR") {
@@ -65,6 +71,7 @@ const DD = {
 
     _DragStart: function(e) {
         e.stopPropagation();
+        e.preventDefault();
         let obj = DD._GetDraggingTarget(e);
         if (!obj) {
             return;
