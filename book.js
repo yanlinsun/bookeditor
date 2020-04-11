@@ -61,11 +61,12 @@ class Book {
 
     parseChapters(dom) {
         let tocdiv = dom.querySelector("div.toc");
-        Array.from(tocdiv.querySelectorAll("tr")).forEach(tr => {
+        Array.from(tocdiv.querySelectorAll("tr")).forEach((tr, i) => {
             let link = tr.cells[0].querySelector("a");
             if (link) {
                 let t = {};
                 t.id = link.hash.substring(1);
+                this.chapters.set(t.id, t); // put it first, in case content has sub chapter
                 t.indent = 0;
                 let span = link.parentNode.querySelector("span");
                 if (span) {
@@ -80,7 +81,6 @@ class Book {
                     }
                 }
                 t.title = this.normalizeChapterTitle(link.innerText);
-                t.order = this.parseOrder(t.title);
                 let div = dom.querySelector("div[id='" + t.id + "']");
                 if (!this.author) {
                     this.parseAuthor(div.innerHTML);
@@ -91,13 +91,13 @@ class Book {
                 if (!this.publisher) {
                     this.parsePublisher(div.innerHTML);
                 }
-                t.ignore = t.indent && t.content.length < 200;
-                this.chapters.set(t.id, t); // put it first, in case content has sub chapter
                 t.content = this.normalize(t, div.innerHTML);
+                t.ignore = t.indent && t.content.length < 200;
+                t.order = i * 10000 + this.parseOrder(t.title);
             }
         });
         let sortedChapters = new Map();
-        Array.from(this.chapters.values()).sort((a, b) => a.indent == b.indent ? a.order - b.order : 0).map(c => sortedChapters.set(c.id, c));
+        Array.from(this.chapters.values()).sort((a, b) => a.order - b.order).map(c => sortedChapters.set(c.id, c));
         this.chapters = sortedChapters;
         
     }
@@ -154,7 +154,7 @@ class Book {
             t.ignore = t.indent && t.content.length < 200;
             this.chapters.set(t.id, t);
         }
-        if (!result) 
+        if (result == null) 
             result = html;
         return result;
     }

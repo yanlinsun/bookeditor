@@ -11,11 +11,8 @@ let editor = null;
 
 function init() {
     document.querySelector("#book_file").onclick = opendir;
-    document.querySelector("#book_save").onclick = () => editorAction("save");
-    document.querySelector("#merge_up").onclick = () => editorAction("merge_up");
-    document.querySelector("#move_first").onclick = () => editorAction("move_first");
-    document.querySelector("#move_last").onclick = () => editorAction("move_last");
-    document.querySelector("#show_all").onclick = () => editorAction("show_all");
+    var editorActions = Array.from(document.querySelectorAll("button.editoraction"));
+    editorActions.map(b => b.onclick = () => editorAction(b.id));
     check();
 }
 

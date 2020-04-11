@@ -128,6 +128,7 @@ const DD = {
         
         document.__dd_placeholder = null;
         document.__dd_dragging = null;
+        document.__dd_dragging_over = null;
         document.onmousemove = null;
         document.onmouseup = null;
     },

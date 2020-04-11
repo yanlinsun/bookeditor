@@ -12,7 +12,7 @@
             <div class="column-box two-columns">
                 <div class="row-box buttonbar withelement">
                     <input type="button" id="book_file" value="Open" class="button-primary"></input>
-                    <input type="button" id="book_save" value="Save" class="button-primary"></input>
+                    <button id="save" class="button-primary editoraction">Save</button>
                 </div>
                 <div class="vscrollable withelement">
                     <table id="book_list" class="selectable">
@@ -21,10 +21,12 @@
             </div>
             <div class="column-box flex-column">
                 <div class="row-box buttonbar withelement">
-                    <button id="move_first" class="button-primary material-icons">vertical_align_top</button>
-                    <button id="move_last" class="button-primary material-icons">vertical_align_bottom</button>
-                    <button id="merge_up" class="button-primary material-icons">merge_type</button>
-                    <button id="show_all" class="button-primary material-icons check-box">check_box_outline_blank</button>
+                    <button id="move_first" class="button-primary material-icons editoraction">vertical_align_top</button>
+                    <button id="move_last" class="button-primary material-icons editoraction">vertical_align_bottom</button>
+                    <button id="merge_up" class="button-primary material-icons editoraction">merge_type</button>
+                    <button id="indent_increase" class="button-primary material-icons editoraction">format_indent_increase</button>
+                    <button id="indent_decrease" class="button-primary material-icons editoraction">format_indent_decrease</button>
+                    <button id="show_all" action="show_all" class="button-primary material-icons check-box editoraction">check_box_outline_blank</button>
                     <label for="save_all" class="check-box">Display Deleted</label>
                     <div id="message" class="message hide withelement">
                     </div>

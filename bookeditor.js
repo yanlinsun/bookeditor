@@ -200,8 +200,8 @@ class BookEditor {
                 this.addTocButton(cell, "delete", this.deleteToc);
             }
             this.addTocButton(cell, "merge_type", this.mergeUp);
-            this.addTocButton(cell, "format_indent_decrease", this.indentOutToc);
-            this.addTocButton(cell, "format_indent_increase", this.indentInToc);
+            this.addTocButton(cell, "format_indent_decrease", this.indentDecreaseToc);
+            this.addTocButton(cell, "format_indent_increase", this.indentIncreaseToc);
             this.addTocButton(cell, "vertical_align_top", this.moveFirst);
             this.addTocButton(cell, "vertical_align_bottom", this.moveLast);
         }
@@ -228,6 +228,11 @@ class BookEditor {
             case "move_last":
                 this.moveLast(id);
                 break;
+            case "indent_increase":
+                this.indentIncreaseToc();
+                break;
+            case "indent_decrease":
+                this.indentDecreaseToc();
             default:
                 break;
         }
@@ -265,6 +270,8 @@ class BookEditor {
         let cell = this.tocCell(id);
         let row = cell.parentNode;
         let table = this.tocTable();
+        if (table.firstElementChild.tagName == 'TBODY')
+            table = table.firstElementChild;
         table.insertBefore(row, table.firstElementChild);
     }
 
@@ -272,6 +279,8 @@ class BookEditor {
         let cell = this.tocCell(id);
         let row = cell.parentNode;
         let table = this.tocTable();
+        if (table.firstElementChild.tagName == 'TBODY')
+            table = table.firstElementChild;
         table.insertBefore(row, null);
     }
 
@@ -285,41 +294,43 @@ class BookEditor {
             let previousId = previousRow.firstElementChild.id;
             let previousChapter = this.currentBook.chapters.get(previousId);
             if (previousChapter) {
-                previousChapter.content += "\r\n" + cell.chapter.content;
+                previousChapter.content += "\n" + "<p>" + cell.chapter.title + "</p>\n" + cell.chapter.content;
                 this.changeTocText(id, cell.chapter.title + " (merged)");
                 this.deleteToc(id);
             }
         }
     }
 
-    indentOutToc(id) {
-        this.indentToc(id, -1);
+    indentDecreaseToc() {
+        this.indentToc(-1);
     }
 
-    indentInToc(id) {
-        this.indentToc(id, 1);
+    indentIncreaseToc() {
+        this.indentToc(1);
     }
 
-    indentToc(id, direction) {
-        let cell = this.tocCell(id);
-        let indent = cell.chapter.indent;
-        if (indent > 0) {
-            cell.classList.remove("indent" + indent);
-            indent += direction;
+    indentToc(direction) {
+        let cells = this.tocTable().querySelectorAll("td.selected");
+        for (var cell of cells) {
+            let indent = cell.chapter.indent;
+            if (indent > 0) {
+                cell.classList.remove("indent" + indent);
+                indent += direction;
+            }
+            if (indent < 0) indent = 0;
+            else if (indent > 2) indent = 2;
+            if (indent == 0) {
+                this.hideTocButton(cell, "format_indent_decrease");
+                this.unhideTocButton(cell, "format_indent_increase");
+            } else if (indent == 2) {
+                this.hideTocButton(cell, "format_indent_increase");
+                this.unhideTocButton(cell, "format_indent_decrease");
+            } else {
+                this.unhideTocButton(cell, "format_indent_increase");
+                this.unhideTocButton(cell, "format_indent_decrease");
+            }
+            cell.chapter.indent = indent;
         }
-        if (indent < 0) indent = 0;
-        else if (indent > 2) indent = 2;
-        if (indent == 0) {
-            this.hideTocButton(cell, "format_indent_decrease");
-            this.unhideTocButton(cell, "format_indent_increase");
-        } else if (indent == 2) {
-            this.hideTocButton(cell, "format_indent_increase");
-            this.unhideTocButton(cell, "format_indent_decrease");
-        } else {
-            this.unhideTocButton(cell, "format_indent_increase");
-            this.unhideTocButton(cell, "format_indent_decrease");
-        }
-        cell.chapter.indent = indent;
     }
 
     hideTocButton(cell, name) {
