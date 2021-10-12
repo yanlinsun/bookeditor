@@ -15,7 +15,7 @@
   "author": "Yanlin Sun",
   "license": "None",
   "devDependencies": {
-    "electron": "^5.0.0",
+    "electron": "^11.5.0",
     "jszip": "^3.2.2"
   },
   "dependencies": {
