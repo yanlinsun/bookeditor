@@ -16,7 +16,7 @@
   "license": "None",
   "devDependencies": {
     "electron": "^5.0.0",
-    "jszip": "^3.2.2"
+    "jszip": "^3.7.0"
   },
   "dependencies": {
     "nzh": "^1.0.4",
